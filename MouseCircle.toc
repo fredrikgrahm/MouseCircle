@@ -1,0 +1,6 @@
+## Interface: 11302
+## Title: Mouse Circle
+## Author: Your Name
+## Version: 1.0
+## Notes: Draws a circle around the mouse pointer.
+MouseCircle.lua
