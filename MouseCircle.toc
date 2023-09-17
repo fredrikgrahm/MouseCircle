@@ -3,4 +3,6 @@
 ## Author: Your Name
 ## Version: 1.0
 ## Notes: Draws a circle around the mouse pointer.
+## SavedVariables: MouseCircleSettings
+
 MouseCircle.lua

@@ -1,9 +1,11 @@
+-- Declare SavedVariables
+MouseCircleSettings = MouseCircleSettings or {}
+
 -- Print a message to chat to confirm the addon has loaded
 DEFAULT_CHAT_FRAME:AddMessage("MouseCircle Loaded!")
 DEFAULT_CHAT_FRAME:AddMessage("To open settings panel enter /sm settings")
 
 settings = {}
-MouseCircleSettings = MouseCircleSettings or {}
 -- Create the frame
 local circleFrame = CreateFrame("Frame", nil, UIParent)
 circleFrame:SetSize(64, 64) -- Set the size of the frame
@@ -12,6 +14,46 @@ circleFrame:SetSize(64, 64) -- Set the size of the frame
 local circleTexture = circleFrame:CreateTexture(nil, "BACKGROUND")
 circleTexture:SetTexture("Interface\\AddOns\\MouseCircle\\Textures\\circle.tga") -- Point this to your custom texture
 circleTexture:SetAllPoints(circleFrame)
+
+-- Function to save settings
+local function SaveSettings()
+    settings.circleSize = sizeSlider:GetValue()
+    settings.circleVisibility = visibilityCheckbox:GetChecked()
+    settings.circleTransparency = transparencySlider:GetValue()
+    print("Saved circleTransparency: " .. tostring(settings.circleTransparency)) -- Print the saved transparency setting
+end
+
+-- Function to load settings
+local function LoadSettings()
+    settings.circleSize = MouseCircleSettings.circleSize or 64
+    settings.circleVisibility = MouseCircleSettings.circleVisibility or true
+    settings.circleTransparency = MouseCircleSettings.circleTransparency or 
+    print("Loaded circleTransparency: " .. tostring(settings.circleTransparency)) -- Print the loaded transparency setting
+end
+
+circleFrame:SetScript("OnEvent", function(self, event, addonName)
+    if event == "ADDON_LOADED" and addonName == "MouseCircle" then
+        LoadSettings()  -- Load the saved settings first
+
+        -- Then apply the loaded settings
+        sizeSlider:SetValue(settings.circleSize)
+        visibilityCheckbox:SetChecked(settings.circleVisibility)
+        transparencySlider:SetValue(settings.circleTransparency)  -- Apply the transparency setting
+        circleTexture:SetAlpha(settings.circleTransparency)  -- Apply the transparency setting to the circle
+
+        -- Apply the loaded visibility setting
+        if settings.circleVisibility then
+            circleFrame:Show()
+        else
+            circleFrame:Hide()
+        end
+    elseif event == "PLAYER_LOGOUT" then
+        SaveSettings()  -- Save the current settings
+    elseif event == "PLAYER_ENTERING_WORLD" then
+        SetCircleColorByClass()
+    end
+end)
+
 
 -- Create the settings panel frame
 local settingsPanel = CreateFrame("Frame", "MyAddonSettingsPanel", UIParent, "BackdropTemplate")
@@ -209,9 +251,7 @@ transparencySlider:SetScript("OnValueChanged", function(self, value)
     OnSettingChanged()
 end)
 
-local function SaveSettings()
-    MouseCircleSettings = settings -- Save the settings
-end
+
 
 circleFrame:RegisterEvent("PLAYER_LOGOUT")
 circleFrame:SetScript("OnEvent", function(self, event)
@@ -264,24 +304,9 @@ end
 circleFrame:SetScript("OnUpdate", UpdateCirclePosition)
 
 
-circleFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-circleFrame:RegisterEvent("ADDON_LOADED")
-circleFrame:RegisterEvent("PLAYER_LOGOUT")
-
-
-local function SaveSettings()
-    MouseCircleSettings = settings -- Save the settings
-end
-
-
--- Define default settings
-local defaultSettings = {
-    circleSize = 64,
-    circleVisibility = true,
-    circleTransparency = 1
-}
-circleFrame:SetScript("OnEvent", function(self, event, addonName)
-    if event == "ADDON_LOADED" and addonName == "MouseCircle" then
+-- Function to handle the ADDON_LOADED event
+local function OnAddonLoaded(event, addonName)
+    if addonName == "MouseCircle" then
         -- Load the saved settings or use the default settings if none exist
         if MouseCircleSettings and MouseCircleSettings.circleSize then
             print("Loaded custom MouseCircleSettings")
@@ -294,10 +319,32 @@ circleFrame:SetScript("OnEvent", function(self, event, addonName)
         -- Apply the loaded settings
         sizeSlider:SetValue(settings.circleSize or defaultSettings.circleSize)
         visibilityCheckbox:SetChecked(settings.circleVisibility or defaultSettings.circleVisibility)
-        transparencySlider:SetValue(settings.circleTransparency or defaultSettings.circleTransparency)
+        transparencySlider:SetValue(settings.circleTransparency or defaultSettings.circleTransparency) -- Set the value of the transparency slider
+    end
+end
+
+-- Function to handle the PLAYER_LOGOUT event
+local function OnPlayerLogout(event)
+    SaveSettings() -- Save the current settings
+end
+
+-- Function to handle the PLAYER_ENTERING_WORLD event
+local function OnPlayerEnteringWorld(event)
+    SetCircleColorByClass()
+end
+
+-- Register events
+circleFrame:RegisterEvent("ADDON_LOADED")
+circleFrame:RegisterEvent("PLAYER_LOGOUT")
+circleFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+
+-- Set the script for each event
+circleFrame:SetScript("OnEvent", function(self, event, ...)
+    if event == "ADDON_LOADED" then
+        OnAddonLoaded(event, ...)
     elseif event == "PLAYER_LOGOUT" then
-        SaveSettings() -- Save the current settings
+        OnPlayerLogout(event)
     elseif event == "PLAYER_ENTERING_WORLD" then
-        SetCircleColorByClass()
+        OnPlayerEnteringWorld(event)
     end
 end)
